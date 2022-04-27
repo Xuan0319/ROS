@@ -1,0 +1,198 @@
+#include "ros/ros.h"
+#include <gnc_functions.hpp>
+#include "std_msgs/String.h"
+#include "sensor_msgs/NavSatFix.h"
+#include <iostream>
+#include<string>
+
+//include API 
+
+
+std::vector<gnc_api_waypoint> waypointList;
+gnc_api_waypoint nextWayPoint;
+
+float alt=0.5;
+float i=0,j=0,psi=0;
+int counter=0;
+int lat1,lon1;
+
+void forward(int j){
+
+    // j+=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void backward(){
+
+    j-=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void left(){
+
+    i-=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void right(int i){
+
+    // i+=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void yaw_left(){
+
+    psi+=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void yaw_right(){
+
+    psi-=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void stop(){
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void drone1_pos(const std_msgs::String::ConstPtr& drone1){
+
+	lat1=stoi(drone1->lat);
+	lon1=stoi(drone1->lon);
+
+}
+
+void callBack(const sensor_msgs::NavSatFix::ConstPtr& gps){
+    ros::Rate rate(2.0);
+    int counter = 0;
+	int lat,lon;
+
+        while(ros::ok())
+        {
+            ros::spinOnce();
+            rate.sleep();
+            ROS_INFO("1");
+
+			lat=gps->latitude*100000;
+			lon=gps->longtitude*100000;
+
+            if(finder==1)
+			{
+				lat_d=lat1-lat;
+				lon_d=lon1-lon;
+
+				if(lat_d>2){
+					forward(lat_d)
+				}
+				else if(lon_d>2)
+				{
+					right(lon_d)
+				}
+				
+
+				
+			}
+            
+        }
+    }
+}
+
+
+
+int main(int argc, char** argv)
+{
+	//initialize ros 
+	ros::init(argc, argv, "gnc_node");
+	ros::NodeHandle gnc_node;
+	std::string topicName="/mavros/global_position/global";
+
+
+	//initialize control publisher/subscribers
+	init_publisher_subscriber(gnc_node);
+
+  	// wait for FCU connection
+	wait4connect();
+
+	//wait for used to switch to mode GUIDED
+	set_mode("GUIDED");	
+
+	//create local reference frame 
+	initialize_local_frame();
+
+	//request takeoff
+	takeoff(alt);
+
+    const ros::Subscriber &subscriber = gnc_node.subscribe(phone_msg, 1000, drone1_pos);
+    const ros::Subscriber &subscriber = gnc_node.subscribe(topicName, 1000, callBack);
+
+	
+    ros::spin();
+	
+	return 0;
+}
+
+
