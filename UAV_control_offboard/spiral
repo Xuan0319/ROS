@@ -1,0 +1,92 @@
+#include <gnc_functions.hpp>
+#include <unistd.h>
+//include API 
+
+using namespace std;
+
+//specify some waypoints 
+std::vector<gnc_api_waypoint> waypointList;
+gnc_api_waypoint nextWayPoint;
+
+void set_position(float x,float y,float z,float psi){
+	nextWayPoint.x = x;
+	nextWayPoint.y = y;
+	nextWayPoint.z = z;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+}
+
+int main(int argc, char** argv)
+{
+	//initialize ros 
+	ros::init(argc, argv, "gnc_node");
+	ros::NodeHandle gnc_node("~");
+	
+	//initialize control publisher/subscribers
+	init_publisher_subscriber(gnc_node);
+
+  	// wait for FCU connection
+	wait4connect();
+
+	//wait for used to switch to mode GUIDED
+	set_mode("GUIDED");	
+
+	//create local reference frame 
+	initialize_local_frame();
+
+	//request takeoff
+	takeoff(0.5);
+	set_speed(0.1);
+
+	nextWayPoint.x = 0;           //lon(+E,-W)
+	nextWayPoint.y = 1;          //lat(+N,-S)
+	nextWayPoint.z = 1;
+	nextWayPoint.psi = 0;       //angle:0,North ; 90,West ; -90,East ; 180,South
+	waypointList.push_back(nextWayPoint);
+
+	for(int cycle=0;cycle <2;cycle++){
+	set_position(cycle+1,cycle+1,1,-90);
+	set_position(cycle+1.5,0,1,-135);
+	set_position(cycle+1,-(cycle+1.5),1,135);
+	set_position(0,-(cycle+2),1,120);
+	set_position(-(cycle+1.5),-(cycle+1.5),1,60);
+	set_position(-(cycle+2),0,1,30);
+	set_position(-(cycle+1.5),cycle+1.5,1,-45);
+	set_position(0,cycle+2,1,-60);
+	}
+
+	set_position(0,0,1,180);
+	set_position(0,0,1,0);
+	//waypointList.push_back(nextWayPoint);
+
+
+
+
+
+
+	//specify control loop rate. We recommend a low frequency to not over load the FCU with messages. Too many messages will cause the drone to be sluggish
+	ros::Rate rate(2.0);
+	int counter = 0;
+	while(ros::ok())
+	{
+		ros::spinOnce();
+		rate.sleep();
+		//if(check_waypoint_reached(.3) == 1)
+		//{
+			if (counter < waypointList.size())
+			{
+				ROS_INFO("11");
+				set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+				counter++;	
+				//ros::Duration(10).sleep();
+				usleep(8000000);
+
+			}else{
+				//land after all waypoints are reached
+				land();
+			}	
+		//}	
+		
+	}
+	return 0;
+}
