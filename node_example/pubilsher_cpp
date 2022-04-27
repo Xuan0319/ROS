@@ -1,0 +1,25 @@
+#include <iostream>
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+ 
+using namespace std;
+ 
+int main(int argc, char *argv[]) {
+    string nodeName = "publisher_cpp";
+    ros::init(argc, argv, nodeName);      //initialize node
+    ros::NodeHandle nodeHandle;            //Create node
+    string publisherName = "data_topic";    //setting topic name
+    
+    const ros::Publisher &publisher = nodeHandle.advertise<std_msgs::String>(publisherName, 1000);
+    ros::Rate rate(1);
+    int i = 0;
+    while (ros::ok()) {
+        std_msgs::String msg;
+        // msg.data = "Hello by cpp" + to_string(i);
+        msg.data = "135";
+        publisher.publish(msg);
+        i += 1;
+        rate.sleep();
+    }
+    return 0;
+}
