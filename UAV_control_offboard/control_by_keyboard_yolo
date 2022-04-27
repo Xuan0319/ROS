@@ -1,0 +1,339 @@
+#include "ros/ros.h"
+#include <gnc_functions.hpp>
+#include "std_msgs/String.h"
+#include <iostream>
+#include <typeinfo>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+//include API 
+using namespace std;
+
+std::vector<gnc_api_waypoint> waypointList;
+gnc_api_waypoint nextWayPoint;
+
+float alt=1.5;
+float i=0,j=0,psi=0;
+int counter=0;
+
+void forward(int j){
+
+    //j+=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void backward(){
+
+    j-=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void left(){
+
+    i-=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void right(){
+
+    i+=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void yaw_left(){
+
+    psi+=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void yaw_right(int psi){
+
+    //psi-=1;
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+
+void stop(){
+
+    nextWayPoint.x = i;
+	nextWayPoint.y = j;
+	nextWayPoint.z = alt;
+	nextWayPoint.psi = psi;
+	waypointList.push_back(nextWayPoint);
+
+	set_destination(waypointList[counter].x,waypointList[counter].y,waypointList[counter].z, waypointList[counter].psi);
+	counter++;	
+	
+}
+string itos(int x){
+	string s;
+	switch(x){
+		case 1:
+		{
+			s="1";
+			break;
+		}
+		case 2:
+		{
+			s="2";
+			break;
+		}
+		case 3:
+		{
+			s="3";
+			break;
+		}
+		case 4:
+		{
+			s="4";
+			break;
+		}
+		case 5:
+		{
+			s="5";
+			break;
+		}
+		case 6:
+		{
+			s="6";
+			break;
+		}
+		case 7:
+		{
+			s="7";
+			break;
+		}
+		case 8:
+		{
+			s="8";
+			break;
+		}
+		case 9:
+		{
+			s="9";
+			break;
+		}
+		case 0:
+		{
+			s="0";
+			break;
+		}
+	}
+	return s;
+}
+int stoi(char x){
+	int i;
+	switch(x){
+		case '1':
+		{
+			i=1;
+			break;
+		}
+		case '2':
+		{
+			i=2;
+			break;
+		}
+		case '3':
+		{
+			i=3;
+			break;
+		}
+		case '4':
+		{
+			i=4;
+			break;
+		}
+		case '5':
+		{
+			i=5;
+			break;
+		}
+		case '6':
+		{
+			i=6;
+			break;
+		}
+		case '7':
+		{
+			i=7;
+			break;
+		}
+		case '8':
+		{
+			i=8;
+			break;
+		}
+		case '9':
+		{
+			i=9;
+			break;
+		}
+		case '0':
+		{
+			i=0;
+			break;
+		}
+	}
+	return i;
+}
+
+void callBack(std_msgs::String::ConstPtr msg){
+    ros::Rate rate(2.0);
+    int counter = 0;
+
+        while(ros::ok())
+        {
+            ros::spinOnce();
+            rate.sleep();
+            //ROS_INFO("1");
+			string x, d ;
+			int flag=0,i=0;
+			for(int i=0;i<msg->data.size();i++){
+
+				// x.append("1");
+				// string s=&msg->data[0];
+				// x.append(s);
+				// cout<<x;
+				// int e=msg->data[0]-48;
+				// cout<< e <<endl;
+
+				if(msg->data[i]!=47&& flag==0)
+				{
+					int temp1=msg->data[i]-48;
+					string temp=string(itos(temp1));
+					//string temp=&msg->data[i];
+					d.append(temp);
+				}else if(flag==0){
+					flag+=1;
+				}else if (msg->data[i]!=47 && flag==1)
+				{
+					int temp1=msg->data[i]-48;
+					string temp=string(itos(temp1));
+					x.append(temp);
+				}else if(flag==1){
+					flag+=1;
+				}else if (msg->data[i]!='e' && flag==2)
+				{
+					d="0";
+					x="0";
+					cout <<"fin"<<endl;
+				}
+			}
+
+
+			cout << x <<" "<< d  <<endl;
+			
+			int x1,angle;
+			float d1;
+			x1=stoi(x);
+			d1=stoi(d)/10;
+			
+			
+			if(d1>3.5){
+				if(angle>10||angle<-10){
+					yaw_right(angle);
+					forward(d1-3.5);
+				}else{
+					forward(d1-3.5);
+
+				}
+			}else{
+				if(angle>10||angle<-10){
+					yaw_right(angle);
+					forward(d1-3.5);
+				}else{
+					forward(d1-3.5);
+
+				}
+			}
+            
+    }
+}
+
+
+
+int main(int argc, char** argv)
+{
+	//initialize ros 
+	ros::init(argc, argv, "gnc_node");
+	ros::NodeHandle gnc_node;
+	std::string topicName="keyboard_controll";
+
+
+	//initialize control publisher/subscribers
+	init_publisher_subscriber(gnc_node);
+
+  	// wait for FCU connection
+	wait4connect();
+
+	//wait for used to switch to mode GUIDED
+	set_mode("GUIDED");	
+
+	//create local reference frame 
+	initialize_local_frame();
+
+	//request takeoff
+	takeoff(alt);
+
+    const ros::Subscriber &subscriber = gnc_node.subscribe<std_msgs::String>(topicName, 1000, callBack);
+
+    ros::spin();
+	
+	return 0;
+}
+
