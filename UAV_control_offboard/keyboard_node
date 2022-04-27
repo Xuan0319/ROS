@@ -1,0 +1,29 @@
+#include "ros/ros.h"
+#include <iostream>
+#include "std_msgs/String.h"
+
+using namespace std;
+
+int main(int argc, char *argv[]){
+
+    std_msgs::String msg;
+    string nodeName = "keyboard_node";
+    ros::init(argc, argv, nodeName);
+    
+    ros::NodeHandle nodeHandle;
+    string publisherName = "keyboard_controll"; //設定topic名稱
+    const ros::Publisher &publisher = nodeHandle.advertise<std_msgs::String>(publisherName, 1000);
+    ros::Rate rate(1);
+
+    while(ros::ok()){
+
+        cin>>msg.data;
+         
+        publisher.publish(msg);
+        
+        // ROS_INFO("%s",msg);
+        rate.sleep();
+    }
+
+return 0;
+}
