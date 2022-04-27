@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+#coding:utf-8
+import rospy
+from std_msgs.msg import String
+if __name__ == '__main__':
+    nodeName = 'publisher_py'
+    rospy.init_node(nodeName)
+    topicName = 'data_topic'
+    publisher = rospy.Publisher(topicName,String,queue_size=5)
+    rate = rospy.Rate(1)
+    i = 0
+    while not rospy.is_shutdown():
+        date = String()
+        date.data = 'hello by python{}'.format(i)
+        i+=1
+        publisher.publish(date)     #將date字串發布到topic
+        rate.sleep();
