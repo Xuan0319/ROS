@@ -1,0 +1,24 @@
+
+#include <iostream>
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+ 
+using namespace std;
+ 
+void callBack(std_msgs::String::ConstPtr msg) {
+    cout << msg << endl;
+  
+}
+ 
+int main(int argc, char *argv[]) {
+    string nodeName = "sbuscriber_cpp";    
+    ros::init(argc, argv, nodeName);       //initialize node
+    ros::NodeHandle nodeHandle;            //create node
+    string topicName = "data_topic";       //topic name which you want to subscribe
+    
+
+    const ros::Subscriber &subscriber = nodeHandle.subscribe<std_msgs::String>(topicName, 1000, callBack);
+ 
+
+    ros::spin();      //blocking thread  
+}
