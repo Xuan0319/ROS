@@ -1,4 +1,5 @@
 #include <mavros_msgs/CommandTOL.h>
+#include <mavros_msgs/RCIn.h>
 #include <mavros_msgs/CommandLong.h>
 #include <mavros_msgs/State.h>
 #include <nav_msgs/Odometry.h>
@@ -17,7 +18,7 @@
 #include <ros/duration.h>
 #include <iostream>
 #include <string>
-
+#include <mavros_msgs/CommandHome.h>
 
 /**
 \defgroup control_functions
@@ -46,6 +47,8 @@ ros::ServiceClient land_client;
 ros::ServiceClient set_mode_client;
 ros::ServiceClient takeoff_client;
 ros::ServiceClient command_client;
+ros::ServiceClient set_home_client;
+
 /**
 \ingroup control_functions
 This structure is a convenient way to format waypoints
@@ -147,57 +150,32 @@ void set_heading(float heading)
 This function is used to command the drone to fly to a waypoint. These waypoints should be specified in the local reference frame. This is typically defined from the location the drone is launched. Psi is counter clockwise rotation following the drone’s reference frame defined by the x axis through the right side of the drone with the y axis through the front of the drone. 
 @returns n/a
 */
-void set_destination0(float x, float y, float z, float psi)
-{
-	set_heading(psi);
-	//transform map to local
-	float deg2rad = (M_PI/180);
-	float Xlocal = x*cos((correction_heading_g + local_offset_g - 90)*deg2rad) - y*sin((correction_heading_g + local_offset_g - 90)*deg2rad);
-	float Ylocal = x*sin((correction_heading_g + local_offset_g - 90)*deg2rad) + y*cos((correction_heading_g + local_offset_g - 90)*deg2rad);
-	float Zlocal = z;
-
-	// x = Xlocal + correction_vector_g.position.x + local_offset_pose_g.x;
-	// y = Ylocal + correction_vector_g.position.y + local_offset_pose_g.y;
-	// z = Zlocal + correction_vector_g.position.z + local_offset_pose_g.z;
-	
-	local_offset_pose_g.x=0;
-	local_offset_pose_g.y=0;
-	local_offset_pose_g.z=0;
-	x = x + correction_vector_g.position.x + local_offset_pose_g.x;
-	y = y + correction_vector_g.position.y + local_offset_pose_g.y;
-	z = z + correction_vector_g.position.z + local_offset_pose_g.z;
-	ROS_INFO("Destination set to x: %f y: %f z: %f origin frame", x, y, z);
-
-	waypoint_g.pose.position.x = x;
-	waypoint_g.pose.position.y = y;
-	waypoint_g.pose.position.z = z;
-
-	local_pos_pub.publish(waypoint_g);
-	
-}
-
 void set_destination(float x, float y, float z, float psi)
 {
 	set_heading(psi);
 	//transform map to local
 	float deg2rad = (M_PI/180);
-	float Xlocal = x*cos((correction_heading_g + local_offset_g - 90)*deg2rad) - y*sin((correction_heading_g + local_offset_g - 90)*deg2rad);
-	float Ylocal = x*sin((correction_heading_g + local_offset_g - 90)*deg2rad) + y*cos((correction_heading_g + local_offset_g - 90)*deg2rad);
-	float Zlocal = z;
+	// float Xlocal = x*cos((correction_heading_g + local_offset_g - 90)*deg2rad) - y*sin((correction_heading_g + local_offset_g - 90)*deg2rad);
+	// float Ylocal = x*sin((correction_heading_g + local_offset_g - 90)*deg2rad) + y*cos((correction_heading_g + local_offset_g - 90)*deg2rad);
+	// float Zlocal = z;
 
 	// x = Xlocal + correction_vector_g.position.x + local_offset_pose_g.x;
 	// y = Ylocal + correction_vector_g.position.y + local_offset_pose_g.y;
 	// z = Zlocal + correction_vector_g.position.z + local_offset_pose_g.z;
-	std::cout << waypoint_g.pose.position.x << "+" << waypoint_g.pose.position.y;
-	std::cout << correction_vector_g.position.x << "+" << local_offset_pose_g.x;
+	
 	x = x + correction_vector_g.position.x + local_offset_pose_g.x;
 	y = y + correction_vector_g.position.y + local_offset_pose_g.y;
 	z = z + correction_vector_g.position.z + local_offset_pose_g.z;
-	ROS_INFO("Destination set to x: %f y: %f z: %f origin frame", x, y, z);
+
+	// x = x + correction_vector_g.position.x ;
+	// y = y + correction_vector_g.position.y ;
+	// z = z + correction_vector_g.position.z ;
 
 	waypoint_g.pose.position.x = x;
 	waypoint_g.pose.position.y = y;
 	waypoint_g.pose.position.z = z;
+ 
+	ROS_INFO("Destination set to x: %f y: %f z: %f origin frame", x, y, z);
 
 	local_pos_pub.publish(waypoint_g);
 	
@@ -278,6 +256,10 @@ int initialize_local_frame()
 		local_offset_pose_g.x = local_offset_pose_g.x + current_pose_g.pose.pose.position.x;
 		local_offset_pose_g.y = local_offset_pose_g.y + current_pose_g.pose.pose.position.y;
 		local_offset_pose_g.z = local_offset_pose_g.z + current_pose_g.pose.pose.position.z;
+
+		// local_offset_pose_g.x = local_offset_pose_g.x ;
+		// local_offset_pose_g.y = local_offset_pose_g.y ;
+		// local_offset_pose_g.z = local_offset_pose_g.z ;
 		// ROS_INFO("current heading%d: %f", i, local_offset_g/i);
 	}
 	local_offset_pose_g.x = local_offset_pose_g.x/30;
@@ -286,6 +268,8 @@ int initialize_local_frame()
 	local_offset_g /= 30;
 	ROS_INFO("Coordinate offset set");
 	ROS_INFO("the X' axis is facing: %f", local_offset_g);
+	ROS_INFO("the current_pose_x' axis is facing: %f", current_pose_g.pose.pose.position.x);
+	ROS_INFO("the current_pose_y' axis is facing: %f", current_pose_g.pose.pose.position.y);
 	return 0;
 }
 
@@ -330,49 +314,6 @@ int takeoff(float takeoff_alt)
 {
 	//intitialize first waypoint of mission
 	set_destination(0,0,takeoff_alt,0);
-	for(int i=0; i<100; i++)
-	{
-		local_pos_pub.publish(waypoint_g);
-		ros::spinOnce();
-		ros::Duration(0.01).sleep();
-	}
-	// arming
-	ROS_INFO("Arming drone");
-	mavros_msgs::CommandBool arm_request;
-	arm_request.request.value = true;
-	while (!current_state_g.armed && !arm_request.response.success && ros::ok())
-	{
-		ros::Duration(.1).sleep();
-		arming_client.call(arm_request);
-		local_pos_pub.publish(waypoint_g);
-	}
-	if(arm_request.response.success)
-	{
-		ROS_INFO("Arming Successful");	
-	}else{
-		ROS_INFO("Arming failed with %d", arm_request.response.success);
-		return -1;	
-	}
-
-	//request takeoff
-	
-	mavros_msgs::CommandTOL srv_takeoff;
-	srv_takeoff.request.altitude = takeoff_alt;
-	if(takeoff_client.call(srv_takeoff)){
-		sleep(3);
-		ROS_INFO("takeoff sent %d", srv_takeoff.response.success);
-	}else{
-		ROS_ERROR("Failed Takeoff");
-		return -2;
-	}
-	sleep(2);
-	return 0; 
-}
-
-int takeoff0(float takeoff_alt)
-{
-	//intitialize first waypoint of mission
-	set_destination0(0,0,takeoff_alt,0);
 	for(int i=0; i<100; i++)
 	{
 		local_pos_pub.publish(waypoint_g);
@@ -534,5 +475,20 @@ int init_publisher_subscriber(ros::NodeHandle controlnode)
 	set_mode_client = controlnode.serviceClient<mavros_msgs::SetMode>((ros_namespace + "/mavros/set_mode").c_str());
 	takeoff_client = controlnode.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/takeoff").c_str());
 	command_client = controlnode.serviceClient<mavros_msgs::CommandLong>((ros_namespace + "/mavros/cmd/command").c_str());
+	set_home_client = controlnode.serviceClient<mavros_msgs::CommandHome>((ros_namespace + "/mavros/cmd/set_home").c_str());
 	return 0;
+}
+
+int set_home(){
+	mavros_msgs::CommandHome set_hp_cmd;
+	set_hp_cmd.request.current_gps = true;
+    if( (set_home_client.call(set_hp_cmd)) && set_hp_cmd.response.success){
+ 
+    	ROS_INFO("HP set %d", set_hp_cmd.response.success);
+    	return 0;
+  	}else{
+    	ROS_ERROR("HP set failed");
+    	return -1;
+  	}
+
 }
