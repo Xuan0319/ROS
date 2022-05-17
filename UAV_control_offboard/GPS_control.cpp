@@ -23,52 +23,57 @@ int main(int argc, char **argv)
 
 	//request takeoff
 	takeoff(1);
-    
-    std::vector<gnc_api_waypoint> waypointlist;
+	
+	std::vector<gnc_api_waypoint> waypointlist;
     gnc_api_waypoint nextwp;
-    nextwp.x = -35.3632622;
-    nextwp.y = 149.1652375;
-    nextwp.z = 5;
+
+	auto globel=get_position();
+    nextwp.lat = globel.lat;
+    nextwp.lon = globel.lon;
+    nextwp.alt = 2;
     waypointlist.push_back(nextwp);
 
-    nextwp.x = -35.3632722;
-    nextwp.y = 149.1652375;
-    nextwp.z = 5;
+    nextwp.lat = globel.lat + 0.00003;
+    nextwp.lon = globel.lon + 0.0;
+    nextwp.alt = 2;
     waypointlist.push_back(nextwp);
 
-    // nextwp.x = -35.3613530;
-    // nextwp.y = 149.1579735;
-    // nextwp.z = 5;
-    // waypointlist.push_back(nextwp);
+    nextwp.lat = globel.lat + 0.00003;
+    nextwp.lon = globel.lon + 0.00003;
+    nextwp.alt = 2;
+    waypointlist.push_back(nextwp);
 
-    // nextwp.x = -35.3613535;
-    // nextwp.y = 149.1579730;
-    // nextwp.z = 5;
-    // waypointlist.push_back(nextwp);
+	nextwp.lat = globel.lat + 0.00000;
+    nextwp.lon = globel.lon + 0.00003;
+    nextwp.alt = 2;
+    waypointlist.push_back(nextwp);
+
+	nextwp.lat = globel.lat + 0.00000;
+    nextwp.lon = globel.lon + 0.00000;
+    nextwp.alt = 2;
+    waypointlist.push_back(nextwp);
     
-    int i = 0;
+    int counter = 0;
     //wait for position information
     while(ros::ok()) 
     {
 
-	if(i < waypointlist.size())
+	if(counter < waypointlist.size())
 	{
-		set_waypoint(waypointlist[i].x,waypointlist[i].y,waypointlist[i].z);
-		ROS_INFO("GPS position sent: [%f %f %f]", waypointlist[i].x, waypointlist[i].y, waypointlist[i].z);
-		i++;
-		sleep(4);
-		/*while (waypoint_reached(waypointlist[i].lat, waypointlist[i].lon)!= 1)	
+		set_waypoint(waypointlist[counter].lat,waypointlist[counter].lon,waypointlist[counter].alt);
+		ROS_INFO("GPS position sent: [%f %f %f]", waypointlist[counter].lat, waypointlist[counter].lon, waypointlist[counter].alt);
+		// counter++;
+		// sleep(4);
+		while (true)	
 		{		
-		if (waypoint_reached(waypointlist[i].lat, waypointlist[i].lon)== 1)
+		if (check_position(waypointlist[counter].lat, waypointlist[counter].lon)== 1)
 		{
-			i++;
+			ROS_INFO("ok");
+			counter++;
 			break;
 		}
-		else
-		{
-			continue;		
-		}}*/
-		//sleep(5);	
+		}
+		sleep(5);	
 	}
 	else
 	{
