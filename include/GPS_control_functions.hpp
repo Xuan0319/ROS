@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <mavros_msgs/GlobalPositionTarget.h>
+#include <sensor_msgs/NavSatFix.h>
 
 
 /**
@@ -38,12 +39,14 @@ float current_heading_g;
 float local_offset_g;
 float correction_heading_g = 0;
 float local_desired_heading_g; 
-
+float latitude,longitude;
+int lat_,lon_;
 
 ros::Publisher global_pos_pub_gps;
 ros::Publisher local_pos_pub;
 ros::Subscriber currentPos;
 ros::Subscriber state_sub;
+ros::Subscriber gps_sub;
 ros::ServiceClient arming_client;
 ros::ServiceClient land_client;
 ros::ServiceClient set_mode_client;
@@ -55,11 +58,15 @@ ros::ServiceClient command_client;
 This structure is a convenient way to format waypoints
 */
 struct gnc_api_waypoint{
-	float x; ///< distance in x with respect to your reference frame
-	float y; ///< distance in y with respect to your reference frame
-	float z; ///< distance in z with respect to your reference frame
+	float lat; ///< distance in x with respect to your reference frame
+	float lon; ///< distance in y with respect to your reference frame
+	float alt; ///< distance in z with respect to your reference frame
 	float psi; ///< rotation about the third axis of your reference frame
 };
+
+struct globel_location{
+	float lat,lon;
+}typedef globel_location;
 
 //get armed state
 void state_cb(const mavros_msgs::State::ConstPtr& msg)
@@ -423,6 +430,58 @@ int set_speed(float speed__mps)
 	ROS_INFO("change speed result was %d ", speed_cmd.response.result);
 	return 0;
 }
+
+void callback_gps(const sensor_msgs::NavSatFix::ConstPtr& gps)
+{
+	//int latitude,longitude;
+	latitude=gps->latitude;   
+
+	longitude=gps->longitude;
+
+  	//ROS_INFO("\n lat:%f\n lon:%f\n",latitude,longitude);
+
+
+}
+
+globel_location get_position(){
+
+	globel_location pose;
+
+	pose.lat=latitude;   
+
+	pose.lon=longitude;
+
+	return pose;
+
+}
+
+int check_position(float lat, float lon){
+
+	globel_location pose=get_position();
+	int now_lat=pose.lat*1000000;
+	int now_lon=pose.lon*1000000;
+	lat_=lat*1000000;
+	lon_=lon*1000000;
+
+    ROS_INFO("%d %d",lat_-now_lat,lon_-now_lon);
+
+	if(abs(lat_-now_lat)<=50 && abs(lon_-now_lon)<=50){	
+
+		ROS_INFO("goal");		
+		return 1;
+
+	}else{
+		set_waypoint(lat,lon,2);
+		ROS_INFO("fixing");
+		sleep(2);
+		return 0;
+	}
+
+
+
+}
+
+
 /**
 \ingroup control_functions
 This function is called at the beginning of a program and will start of the communication links to the FCU. The function requires the program's ros nodehandle as an input 
@@ -447,7 +506,8 @@ int init_publisher_subscriber(ros::NodeHandle controlnode)
 	set_mode_client = controlnode.serviceClient<mavros_msgs::SetMode>((ros_namespace + "/mavros/set_mode").c_str());
 	takeoff_client = controlnode.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/takeoff").c_str());
 	command_client = controlnode.serviceClient<mavros_msgs::CommandLong>((ros_namespace + "/mavros/cmd/command").c_str());
-	global_pos_pub_gps = controlnode.advertise<mavros_msgs::GlobalPositionTarget>((ros_namespace +"/mavros/setpoint_raw/global").c_str(),10);
+	global_pos_pub_gps = controlnode.advertise<mavros_msgs::GlobalPositionTarget>((ros_namespace +"/mavros/setpoint_raw/global").c_str(),10);   //topic of publishing waypoints
+	gps_sub = controlnode.subscribe<sensor_msgs::NavSatFix>((ros_namespace + "/mavros/global_position/global").c_str(), 100, callback_gps);     //topic of getting GPS position
 
 	return 0;
 }
