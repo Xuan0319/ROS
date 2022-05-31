@@ -1,5 +1,8 @@
 #include <ros/ros.h>
 #include <GPS_control_functions.hpp>
+#include <std_msgs/String.h>
+#include <iostream>
+
 
 std::vector<gnc_api_waypoint> waypointlist;
 gnc_api_waypoint nextwp;
@@ -20,17 +23,12 @@ int start_mission(){
     ros::Rate rate(2.0);
     wait4connect();   
 
-	set_mode("GUIDED");	
+	//set_mode("GUIDED");	
 
 	//create local reference frame 
-	initialize_local_frame();
-
-	arm();
-
-	//request takeoff
-	takeoff(1);
-	
-
+	initialize_local_frame();	
+	// arm();
+	// takeoff(1);
 
 	auto globel=get_position();
 
@@ -43,11 +41,8 @@ int start_mission(){
     
     int counter = 0;
     //wait for position information
-    while(ros::ok()) 
+    while(counter < waypointlist.size()) 
     {
-
-	if(counter < waypointlist.size())
-	{
 		set_waypoint(waypointlist[counter].lat,waypointlist[counter].lon,waypointlist[counter].alt);
 		ROS_INFO("GPS position sent: [%f %f %f]", waypointlist[counter].lat, waypointlist[counter].lon, waypointlist[counter].alt);
 		// counter++;
@@ -62,28 +57,46 @@ int start_mission(){
 		}
 		}
 		sleep(5);	
-	}
-	else
-	{
-		land();
-	} 
-       
-    }
 
+	}
 return 0;
+}
+
+void cmd_receiver(const std_msgs::String msg){
+	std::cout << msg << std::endl;
+	mqtt_command.append(msg.data);
+	if(mqtt_command=="takeoff"){
+		ROS_INFO("get_cmd_takeoff");
+		set_mode("GUIDED");
+		arm();
+		takeoff(1);
+		mqtt_command="";
+	}
+	if(mqtt_command=="go"){
+		ROS_INFO("get_cmd_go");
+		start_mission();
+		mqtt_command="";
+	}
+	if(mqtt_command=="land"){
+		ROS_INFO("get_cmd_land");
+		land();
+		mqtt_command="";
+	}
 }
 
 
 
-
-
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
-	ros::init(argc, argv, "gnc_node");
-	ros::NodeHandle gnc_node("~");
+	std::string nodeName = "gnc_node";
+	ros::init(argc, argv, nodeName);
+	ros::NodeHandle gnc_node;
 	//initialize control publisher/subscribers
 	init_publisher_subscriber(gnc_node);
 
-	start_mission();
-    return 0;
+	const ros::Subscriber mqtt_sub = gnc_node.subscribe<std_msgs::String>("cmd_receiver",1000,cmd_receiver);
+
+	//start_mission();
+	ros::spin();
+    //return 0;
 }
