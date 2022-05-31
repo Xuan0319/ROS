@@ -41,6 +41,7 @@ float correction_heading_g = 0;
 float local_desired_heading_g; 
 float latitude,longitude;
 int lat_,lon_;
+std::string mqtt_command;
 
 ros::Publisher global_pos_pub_gps;
 ros::Publisher local_pos_pub;
@@ -481,7 +482,6 @@ int check_position(float lat, float lon){
 
 }
 
-
 /**
 \ingroup control_functions
 This function is called at the beginning of a program and will start of the communication links to the FCU. The function requires the program's ros nodehandle as an input 
@@ -507,7 +507,7 @@ int init_publisher_subscriber(ros::NodeHandle controlnode)
 	takeoff_client = controlnode.serviceClient<mavros_msgs::CommandTOL>((ros_namespace + "/mavros/cmd/takeoff").c_str());
 	command_client = controlnode.serviceClient<mavros_msgs::CommandLong>((ros_namespace + "/mavros/cmd/command").c_str());
 	global_pos_pub_gps = controlnode.advertise<mavros_msgs::GlobalPositionTarget>((ros_namespace +"/mavros/setpoint_raw/global").c_str(),10);   //topic of publishing waypoints
-	gps_sub = controlnode.subscribe<sensor_msgs::NavSatFix>((ros_namespace + "/mavros/global_position/global").c_str(), 100, callback_gps);     //topic of getting GPS position
+	gps_sub = controlnode.subscribe<sensor_msgs::NavSatFix>((ros_namespace + "/mavros/global_position/global").c_str(), 100, callback_gps);     //topic of getting GPS position             
 
 	return 0;
 }
